@@ -12,13 +12,13 @@ export default async function handler(req, res) {
   const storagePath = path.join(userStorageDir, "storage.json");
   const statusPath = path.join(userStorageDir, "status.json");
 
-  // Função para salvar status da conexão
-  async function saveStatus(status, mensagem, redirectUrl = null) {
+  async function saveStatus(status, mensagem, redirectUrl = null, qrCode = null) {
     const statusData = {
       timestamp: new Date().toISOString(),
       status,
       mensagem,
       redirectUrl,
+      qrCode,
     };
 
     try {
@@ -67,19 +67,16 @@ export default async function handler(req, res) {
 
     page = await context.newPage();
 
-    // Acessa a página de autenticação
     console.log("Acessando página de autenticação...");
     await page.goto("https://messages.google.com/web/authentication", {
       waitUntil: "domcontentloaded",
       timeout: 60000,
     });
 
-    await saveStatus("aguardando_autenticacao", "Aguardando autenticação do usuário...");
-
-    // Monitoramento contínuo
     let isAuthenticated = false;
-    const maxMonitoringTime = 120000;
+    const maxMonitoringTime = 120000; // 2 minutos
     const startTime = Date.now();
+    let lastQrCode = null; // Para rastrear alterações no QR code
 
     while (Date.now() - startTime < maxMonitoringTime && !isAuthenticated) {
       const currentUrl = page.url();
@@ -89,16 +86,42 @@ export default async function handler(req, res) {
         console.log("Usuário autenticado, verificando modal...");
         isAuthenticated = true;
         await handleRememberModal(page, context, storagePath);
-
         await saveStatus("autenticado", "Usuário autenticado com sucesso", currentUrl);
+        await browser.close();
         break;
       }
 
-      await page.waitForTimeout(2000);
+      if (currentUrl.includes("/authentication")) {
+        let qrCodeBase64 = null;
+        try {
+          // Aguarda o elemento do QR code aparecer
+          await page.waitForSelector("mw-qr-code img[src*='data:image']", { timeout: 5000 });
+          const qrElement = await page.$("mw-qr-code img[src*='data:image']");
+          if (qrElement) {
+            qrCodeBase64 = await qrElement.getAttribute("src"); // Pega o base64 diretamente do atributo src
+            if (qrCodeBase64 !== lastQrCode) {
+              // Só atualiza se o QR code mudou
+              lastQrCode = qrCodeBase64;
+              await saveStatus(
+                "aguardando_autenticacao",
+                "QR Code detectado ou atualizado",
+                null,
+                qrCodeBase64
+              );
+              console.log("Novo QR Code salvo em status.json");
+            }
+          }
+        } catch (error) {
+          console.log("QR Code não encontrado ou expirado:", error.message);
+          await saveStatus("aguardando_autenticacao", "Aguardando QR Code...", null, null);
+        }
+      }
+
+      await page.waitForTimeout(2000); // Verifica a cada 2 segundos
     }
 
     if (!isAuthenticated) {
-      await saveStatus("timeout", "Tempo de monitoramento esgotado");
+      await saveStatus("timeout", "Tempo de monitoramento esgotado", null, lastQrCode);
     }
 
     if (!res.headersSent) {
@@ -107,6 +130,7 @@ export default async function handler(req, res) {
         status: isAuthenticated ? "autenticado" : "timeout",
         mensagem: isAuthenticated ? "Usuário autenticado" : "Tempo de monitoramento esgotado",
         redirectUrl: isAuthenticated ? page.url() : null,
+        qrCode: lastQrCode,
       });
     }
   } catch (error) {
