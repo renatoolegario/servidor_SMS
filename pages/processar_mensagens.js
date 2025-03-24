@@ -45,19 +45,20 @@ const ProcessarMensagens = () => {
       setMessages(data);
       let users = data;
 
-      console.log(data);
       users = users.filter((u) => u.pendingMessages > 0 && u.status === 'autenticado');
      
       const usuariosMaiorParaMenor = [...users].sort((a, b) => b.pendingMessages - a.pendingMessages);
       const usuariosMenorParaMaior = [...users].sort((a, b) => a.pendingMessages - b.pendingMessages);
      
-
-      const metadeServidores = Math.ceil(servidoresPossiveis / 2);
+      const total = servidoresPossiveis || 20;
+      const metadeServidores = Math.ceil(total / 2);
       const grupoA = usuariosMaiorParaMenor.slice(0, metadeServidores);
       const grupoB = usuariosMenorParaMaior.slice(0, metadeServidores);
 
       const idsGrupoA = new Set(grupoA.map((u) => u.userId));
       const grupoBLimpo = grupoB.filter((u) => !idsGrupoA.has(u.userId));
+
+     
 
       const usuariosFinal = [...grupoA, ...grupoBLimpo];
       console.log(`Usuários selecionados: ${usuariosFinal.length}`);
