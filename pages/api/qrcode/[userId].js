@@ -35,7 +35,7 @@ export default async function handler(req, res) {
 
     browser = await webkit.launch({
       headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+      // args: ["--no-sandbox", "--disable-setuid-sandbox"],
     });
 
     let context;

@@ -75,7 +75,7 @@ export default async function handler(req, res) {
     // Lança o navegador em modo headless
     browser = await webkit.launch({
       headless: true, // Defina como false para visualizar o navegador
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+      // args: ["--no-sandbox", "--disable-setuid-sandbox"],
     });
 
     let context;
