@@ -16,6 +16,8 @@ async function aguardarElementoComFallback(page, selectors, timeout = 30000) {
       console.warn(`Elemento não encontrado com o seletor: ${selector}. Tentando próximo...`);
     }
   }
+  const pageHTML = await page.content();
+  // console.error(`Nenhum elemento encontrado para os seletores: ${selectors.join(', ')}.\nHTML da página:\n${pageHTML}`);
   throw new Error(`Nenhum elemento encontrado para os seletores: ${selectors.join(', ')}`);
 }
 

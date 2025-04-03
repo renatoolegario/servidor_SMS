@@ -1,0 +1,8 @@
+# .dockerignore
+node_modules
+.next
+.git
+mensagens
+conexoes
+metrics.json
+*.log
