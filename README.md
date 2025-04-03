@@ -1,4 +1,4 @@
-# docker_servidor_sms
+# Servidor SMS
 
 sudo apt update
 sudo apt upgrade
@@ -39,6 +39,22 @@ server {
 
 # Documentação
 
-Sinal para nova conexão de API 
+GET - Sinal para nova conexão de API 
 /api/qrcode/[conexao]
 
+GET - Conferir StatusConexão
+/api/status/[conexao]
+
+GET - Gatilho para Start Envios 
+/api/sender/[conexao]?limite=[limite]
+
+POST - Nova Listagem de Mensagem
+/api/mensagem/[conexao]
+body -> mensagens: {
+        telefone:,
+        mensagem,
+      },
+
+CRON - Manipular e controlar Gatilho de Start
+./processar_mensagens (Envia 10 mensagem para cada servidor existente)
+Recomendado  a cada 1m para fazer os envios.
