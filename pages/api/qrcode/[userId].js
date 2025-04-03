@@ -117,7 +117,7 @@ export default async function handler(req, res) {
         }
       }
 
-      await page.waitForTimeout(2000); // Verifica a cada 2 segundos
+      await page.waitForTimeout(15000); // Verifica a cada 10 segundos
     }
 
     if (!isAuthenticated) {

@@ -3,17 +3,20 @@ import fs from 'fs/promises';
 import path from 'path';
 import { handleRememberModal } from "../../components/handleRememberModal";
 
-async function aguardarElemento(page, selector, timeout = 30000) {
-  try {
-    console.log(`Aguardando elemento: ${selector}`);
-    const elemento = await page.locator(selector);
-    await elemento.waitFor({ state: 'visible', timeout }); // Aguarda o elemento se tornar visível
-    console.log(`Elemento encontrado: ${selector}`);
-    return elemento;
-  } catch (error) {
-    console.error(`Elemento não encontrado: ${selector}`, error);
-    throw new Error(`Elemento ${selector} não encontrado após o tempo limite.`);
+// Função que tenta encontrar o elemento utilizando vários seletores
+async function aguardarElementoComFallback(page, selectors, timeout = 30000) {
+  for (const selector of selectors) {
+    try {
+      console.log(`Tentando encontrar elemento: ${selector}`);
+      const elemento = await page.locator(selector);
+      await elemento.waitFor({ state: 'visible', timeout });
+      console.log(`Elemento encontrado com o seletor: ${selector}`);
+      return elemento;
+    } catch (error) {
+      console.warn(`Elemento não encontrado com o seletor: ${selector}. Tentando próximo...`);
+    }
   }
+  throw new Error(`Nenhum elemento encontrado para os seletores: ${selectors.join(', ')}`);
 }
 
 // Função para simular a escrita no elemento
@@ -21,7 +24,7 @@ const simularEscrita = async (elemento, texto, delay = 1) => {
   console.log(`Iniciando simulação de escrita: "${texto}"`);
   for (let i = 0; i < texto.length; i++) {
     const key = texto[i];
-    await elemento.type(key, { delay }); // Simula a digitação caractere por caractere
+    await elemento.type(key, { delay });
   }
   console.log(`Texto digitado: "${texto}"`);
 };
@@ -145,21 +148,25 @@ export default async function handler(req, res) {
         }
 
         console.log(`Iniciando nova conversa para o telefone: ${mensagemData.telefone}`);
-        const botaoIniciarChat = await aguardarElemento(page, '[href="/web/conversations/new"]');
+        const botaoIniciarChat = await aguardarElementoComFallback(page, ['[href="/web/conversations/new"]']);
         await botaoIniciarChat.click();
         console.log("Botão de iniciar chat clicado.");
-        
-        const inputTelefone = await aguardarElemento(page, '.input-container input');
+
+        const inputTelefone = await aguardarElementoComFallback(page, ['.input-container input']);
         await inputTelefone.click();
         console.log("Input de telefone clicado.");
         await simularEscrita(inputTelefone, mensagemData.telefone);
-        
+
         const contatoButton = await page.locator('mw-contact-selector-button button.mdc-button');
         console.log("Botão de contato localizado.");
         await contatoButton.click();
         console.log("Botão de contato clicado.");
 
-        const textareaMensagem = await aguardarElemento(page, 'textarea[data-e2e-message-input-box]');
+        // Aqui, usamos múltiplos seletores para tentar encontrar o textarea
+        const textareaMensagem = await aguardarElementoComFallback(page, [
+          'textarea[data-e2e-message-input-box]',
+          'textarea.input[placeholder="Envio de mensagens"]'
+        ]);
         await simularEscrita(textareaMensagem, mensagemData.mensagem);
         console.log("Mensagem digitada no textarea.");
 
