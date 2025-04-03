@@ -95,7 +95,7 @@ export default async function handler(req, res) {
         let qrCodeBase64 = null;
         try {
           // Aguarda o elemento do QR code aparecer
-          await page.waitForSelector("mw-qr-code img[src*='data:image']", { timeout: 5000 });
+          await page.waitForSelector("mw-qr-code img[src*='data:image']", { timeout: 10000 });
           const qrElement = await page.$("mw-qr-code img[src*='data:image']");
           if (qrElement) {
             qrCodeBase64 = await qrElement.getAttribute("src"); // Pega o base64 diretamente do atributo src
