@@ -68,7 +68,7 @@ export default async function handler(req, res) {
     page = await context.newPage();
 
     console.log("Acessando página de autenticação...");
-    await page.goto("https://messages.google.com/web/authentication", {
+    await page.goto("https://messages.google.com/web/conversations", {
       waitUntil: "domcontentloaded",
       timeout: 60000,
     });
@@ -78,20 +78,29 @@ export default async function handler(req, res) {
     const startTime = Date.now();
     let lastQrCode = null; // Para rastrear alterações no QR code
 
+    // Entra na página de autenticar 
+
+
     while (Date.now() - startTime < maxMonitoringTime && !isAuthenticated) {
+      
       const currentUrl = page.url();
       console.log(`Monitorando URL atual: ${currentUrl}`);
+      
+      await page.waitForTimeout(3000); // Verifica a cada 1 segundos
 
       if (currentUrl.includes("/conversations")) {
         console.log("Usuário autenticado, verificando modal...");
+        await saveStatus("autenticado", "Aguardando salvar sessão", currentUrl);
         isAuthenticated = true;
         await handleRememberModal(page, context, storagePath);
         await saveStatus("autenticado", "Usuário autenticado com sucesso", currentUrl);
-        await browser.close();
+        await page.waitForTimeout(2000); // Verifica a cada 1 segundos
+        await browser.close();      
+        
         break;
       }
 
-      if (currentUrl.includes("/authentication")) {
+      if (currentUrl.includes("/authentication") && !isAuthenticated ) {
         let qrCodeBase64 = null;
         try {
           // Aguarda o elemento do QR code aparecer
@@ -111,13 +120,14 @@ export default async function handler(req, res) {
               console.log("Novo QR Code salvo em status.json");
             }
           }
+          await page.waitForTimeout(2000); // Verifica a cada 1 segundos
         } catch (error) {
           console.log("QR Code não encontrado ou expirado:", error.message);
           await saveStatus("aguardando_autenticacao", "Aguardando QR Code...", null, null);
-        }
+          await page.waitForTimeout(2000); // Verifica a cada 1 segundos
+        }     
       }
-
-      await page.waitForTimeout(15000); // Verifica a cada 10 segundos
+      await page.waitForTimeout(3000); // Verifica a cada 1 segundos
     }
 
     if (!isAuthenticated) {
