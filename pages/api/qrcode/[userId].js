@@ -68,7 +68,7 @@ export default async function handler(req, res) {
     page = await context.newPage();
 
     console.log("Acessando página de autenticação...");
-    await page.goto("https://messages.google.com/web/conversations", {
+    await page.goto("https://messages.google.com/web/authentication", {
       waitUntil: "domcontentloaded",
       timeout: 60000,
     });
@@ -112,7 +112,7 @@ export default async function handler(req, res) {
         let qrCodeBase64 = null;
         try {
           // Aguarda o elemento do QR code aparecer
-          await page.waitForSelector("mw-qr-code img[src*='data:image']", { timeout: 10000 });
+          await page.waitForSelector("mw-qr-code img[src*='data:image']", { timeout: 500 });
           const qrElement = await page.$("mw-qr-code img[src*='data:image']");
           if (qrElement) {
             qrCodeBase64 = await qrElement.getAttribute("src"); // Pega o base64 diretamente do atributo src
