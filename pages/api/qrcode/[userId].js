@@ -89,16 +89,24 @@ export default async function handler(req, res) {
       await page.waitForTimeout(3000); // Verifica a cada 1 segundos
 
       if (currentUrl.includes("/conversations")) {
-        console.log("Usuário autenticado, verificando modal...");
-        await saveStatus("autenticado", "Aguardando salvar sessão", currentUrl);
-        isAuthenticated = true;
-        await handleRememberModal(page, context, storagePath);
-        await saveStatus("autenticado", "Usuário autenticado com sucesso", currentUrl);
-        await page.waitForTimeout(2000); // Verifica a cada 1 segundos
-        await browser.close();      
-        
-        break;
+        await saveStatus("autenticado", "Aguardando salvar sessão", currentUrl);        
+        const resp = await handleRememberModal(page, context, storagePath);
+        if(resp){
+          isAuthenticated = true;
+          await saveStatus("autenticado", "Usuário autenticado com sucesso", currentUrl);
+          await page.waitForTimeout(2000); // Verifica a cada 1 segundos
+          await browser.close();                
+          break;
+        }
       }
+
+      if(currentUrl.includes("/welcome")){
+        await page.goto("https://messages.google.com/web/authentication", {
+          waitUntil: "domcontentloaded",
+          timeout: 60000,
+        });
+      }
+      
 
       if (currentUrl.includes("/authentication") && !isAuthenticated ) {
         let qrCodeBase64 = null;
@@ -127,7 +135,7 @@ export default async function handler(req, res) {
           await page.waitForTimeout(2000); // Verifica a cada 1 segundos
         }     
       }
-      await page.waitForTimeout(3000); // Verifica a cada 1 segundos
+      await page.waitForTimeout(1000); // Verifica a cada 1 segundos
     }
 
     if (!isAuthenticated) {
