@@ -68,7 +68,7 @@ export default async function handler(req, res) {
     page = await context.newPage();
 
     console.log("Acessando página de autenticação...");
-    await page.goto("https://messages.google.com/web/authentication", {
+    await page.goto("https://messages.google.com/web/conversations", {
       waitUntil: "domcontentloaded",
       timeout: 60000,
     });
@@ -88,18 +88,6 @@ export default async function handler(req, res) {
       
       await page.waitForTimeout(3000); // Verifica a cada 1 segundos
 
-      if (currentUrl.includes("/conversations")) {
-        await saveStatus("autenticado", "Aguardando salvar sessão", currentUrl);        
-        const resp = await handleRememberModal(page, context, storagePath);
-        if(resp){
-          isAuthenticated = true;
-          await saveStatus("autenticado", "Usuário autenticado com sucesso", currentUrl);
-          await page.waitForTimeout(2000); // Verifica a cada 1 segundos
-          await browser.close();                
-          break;
-        }
-      }
-
       if(currentUrl.includes("/welcome")){
         await page.goto("https://messages.google.com/web/authentication", {
           waitUntil: "domcontentloaded",
@@ -112,7 +100,7 @@ export default async function handler(req, res) {
         let qrCodeBase64 = null;
         try {
           // Aguarda o elemento do QR code aparecer
-          await page.waitForSelector("mw-qr-code img[src*='data:image']", { timeout: 500 });
+          await page.waitForSelector("mw-qr-code img[src*='data:image']", { timeout: 5000 });
           const qrElement = await page.$("mw-qr-code img[src*='data:image']");
           if (qrElement) {
             qrCodeBase64 = await qrElement.getAttribute("src"); // Pega o base64 diretamente do atributo src
@@ -135,6 +123,20 @@ export default async function handler(req, res) {
           await page.waitForTimeout(2000); // Verifica a cada 1 segundos
         }     
       }
+
+
+      if (currentUrl.includes("/conversations")) {
+        await saveStatus("autenticado", "Aguardando salvar sessão", currentUrl);        
+        const resp = await handleRememberModal(page, context, storagePath);
+        if(resp){
+          isAuthenticated = true;
+          await saveStatus("autenticado", "Usuário autenticado com sucesso", currentUrl);
+          await page.waitForTimeout(2000); // Verifica a cada 1 segundos
+          await browser.close();                
+          break;
+        }
+      }
+
       await page.waitForTimeout(1000); // Verifica a cada 1 segundos
     }
 
