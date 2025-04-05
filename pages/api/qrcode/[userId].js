@@ -84,9 +84,9 @@ export default async function handler(req, res) {
     while (Date.now() - startTime < maxMonitoringTime && !isAuthenticated) {
       
       const currentUrl = page.url();
-      console.log(`Monitorando URL atual: ${currentUrl}`);
+      // console.log(`Monitorando URL atual: ${currentUrl}`);
       
-      await page.waitForTimeout(3000); // Verifica a cada 1 segundos
+      // await page.waitForTimeout(5000); // Verifica a cada 1 segundos
 
       if(currentUrl.includes("/welcome")){
         await page.goto("https://messages.google.com/web/authentication", {
@@ -100,7 +100,7 @@ export default async function handler(req, res) {
         let qrCodeBase64 = null;
         try {
           // Aguarda o elemento do QR code aparecer
-          await page.waitForSelector("mw-qr-code img[src*='data:image']", { timeout: 5000 });
+          await page.waitForSelector("mw-qr-code img[src*='data:image']");
           const qrElement = await page.$("mw-qr-code img[src*='data:image']");
           if (qrElement) {
             qrCodeBase64 = await qrElement.getAttribute("src"); // Pega o base64 diretamente do atributo src
@@ -116,11 +116,11 @@ export default async function handler(req, res) {
               console.log("Novo QR Code salvo em status.json");
             }
           }
-          await page.waitForTimeout(2000); // Verifica a cada 1 segundos
+          // await page.waitForTimeout(2000); // Verifica a cada 1 segundos
         } catch (error) {
           console.log("QR Code não encontrado ou expirado:", error.message);
           await saveStatus("aguardando_autenticacao", "Aguardando QR Code...", null, null);
-          await page.waitForTimeout(2000); // Verifica a cada 1 segundos
+          // await page.waitForTimeout(2000); // Verifica a cada 1 segundos
         }     
       }
 
@@ -131,13 +131,13 @@ export default async function handler(req, res) {
         if(resp){
           isAuthenticated = true;
           await saveStatus("autenticado", "Usuário autenticado com sucesso", currentUrl);
-          await page.waitForTimeout(2000); // Verifica a cada 1 segundos
+          // await page.waitForTimeout(2000); // Verifica a cada 1 segundos
           await browser.close();                
           break;
         }
       }
 
-      await page.waitForTimeout(1000); // Verifica a cada 1 segundos
+      // await page.waitForTimeout(1000); // Verifica a cada 1 segundos
     }
 
     if (!isAuthenticated) {
